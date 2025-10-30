@@ -78,15 +78,24 @@ def combine_results(result1, result2):
 
     combined_line_matches = []
     for line_m1 in result1["line_matches"]:
-        for line_m2 in result2["line_matches"]:
-            if line_m1["line_no"] == line_m2["line_no"]:
-                combined_line_matches.append(
-                    {"line_no": line_m1["line_no"],
-                    "text": line_m1["text"],
-                    "spans": line_m1["spans"] + line_m2["spans"]})
+        combined_line_matches.append({
+            "line_no": line_m1["line_no"],
+            "text": line_m1["text"],
+            "spans": line_m1["spans"].copy()
+             })
 
-    combined_line_matches += (result1["line_matches"] + result2["line_matches"])
-    combined_line_matches = list({lm["line_no"]: lm for lm in combined_line_matches}.values())
+    for line_m2 in result2["line_matches"]:
+        found = False
+        for combined_line in combined_line_matches:
+            if combined_line["line_no"] == line_m2["line_no"]:
+                combined_line["spans"].extend(line_m2["spans"])
+                found = True
+        if not found:
+            combined_line_matches.append({
+                "line_no": line_m2["line_no"],
+                "text": line_m2["text"],
+                "spans": line_m2["spans"].copy()
+            })
     total_matches = sum(len(lm["spans"]) for lm in combined_line_matches)
 
     combined = {
@@ -180,8 +189,6 @@ def main() -> None:
                     elif combined_result["matches"] > 0 or result["matches"] > 0:
                        combined_results[i] = combine_results(combined_result, result)
 
-        # somehow the 'love'ly in sonnet one doesn't get highlighted when
-        # i search for 'love and'... in 'love summer' it the same lovely gets highlighted, why?
 
         print_results(raw, combined_results, highlight)
 
